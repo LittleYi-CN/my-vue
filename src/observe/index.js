@@ -29,7 +29,7 @@ class Observer {
     data.forEach(item => observe(item))
   }
 }
-
+// 将数据定义为响应性的
 export function defineReactive(target, key, value) { // 闭包 属性劫持
   observe(value); // 对所有的对象都进行属性劫持
   Object.defineProperty(target, key, {
