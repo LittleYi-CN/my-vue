@@ -1,4 +1,5 @@
 import { compileToFunction } from "./compile";
+import { mountComponent } from "./lifeCycle";
 import { initState } from "./state";
 
 export function initMixin(Vue) { // 给Vue增加init方法的
@@ -35,5 +36,9 @@ export function initMixin(Vue) { // 给Vue增加init方法的
         ops.render = render;
       }
     }
+
+    mountComponent(vm, el); // 组件的挂载
+    // 最终就可以获取render方法
+    console.log(ops.render)
   }
 }
