@@ -39,6 +39,5 @@ export function initMixin(Vue) { // 给Vue增加init方法的
 
     mountComponent(vm, el); // 组件的挂载
     // 最终就可以获取render方法
-    console.log(ops.render)
   }
 }

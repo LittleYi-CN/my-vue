@@ -1,3 +1,4 @@
+import Watcher from "./observe/watcher";
 import { createElementVNode, createTextVNode } from "./vdom";
 
 function createElm(vnode) {
@@ -38,7 +39,6 @@ function patch(oldVNode, vnode) {
     const parentElm = elm.parentNode; // 拿到父元素
 
     let newElm = createElm(vnode);
-    console.log(newElm);
     parentElm.insertBefore(newElm, elm.nextSibling);
     parentElm.removeChild(elm);
 
@@ -86,9 +86,11 @@ export function mountComponent(vm, el) {
   vm.$el = el;
 
   // 1、调用render方法产生虚拟节点 虚拟DOM
-  vm._update(vm._render()); // vm.$options.render() 虚拟节点 ._update() 生成真实DOM
+  const updateComponent = () => {
+    vm._update(vm._render()); // vm.$options.render() 虚拟节点 ._update() 生成真实DOM
+  };
   // 2、根据虚拟DOM产生真实DOM
-
+  const watcher = new Watcher(vm, updateComponent, true); // true用于标识是一个渲染watcher
   // 3、插入到el元素中
 }
 
