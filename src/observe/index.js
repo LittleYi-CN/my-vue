@@ -37,7 +37,7 @@ export function defineReactive(target, key, value) { // 闭包 属性劫持
   Object.defineProperty(target, key, {
     get() { // 取值的时候会执行get
       if(Dep.target) {
-        dep.depend();
+        dep.depend(); // 让这个属性的收集器记住watcher
       }
       return value;
     },
