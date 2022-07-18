@@ -7,16 +7,24 @@ let id = 0;
 
 class Watcher {
   // 不同组件有不同的watcher
-  constructor(vm, fn, options) {
+  constructor(vm, exprOrFn, options, cb) {
     this.id = id++;
     this.renderWatcher = options; // 是一个渲染watcher
-    this.getter = fn; // getter意味着调用这个函数可以发生取值操作
+    if(typeof exprOrFn === 'string') {
+      this.getter = function() {
+        return vm[exprOrFn];
+      }
+    } else {
+      this.getter = exprOrFn; // getter意味着调用这个函数可以发生取值操作
+    }
     this.deps = []; // 后续实现计算属性和一些清理工作需要用到
     this.depsId = new Set();
     this.lazy = options.lazy;
+    this.cb = cb;
     this.dirty = this.lazy;
     this.vm = vm;
-    this.lazy ? undefined : this.get();
+    this.user = options.user;
+    this.value = this.lazy ? undefined : this.get();
   }
 
   evaluate() {
@@ -61,7 +69,12 @@ class Watcher {
   }
 
   run() {
-    this.get(); // 渲染的时候用的是最新的vm来渲染的
+    let oldValue = this.value;
+    let newValue = this.get(); // 渲染的时候用的是最新的vm来渲染的
+    if(this.user) {
+      // console.log(this.cb)
+      this.cb.call(this.vm, newValue, oldValue);
+    }
   }
 }
 
