@@ -38,6 +38,7 @@ methods.forEach(method => {
       // 对新增的内容再次进行观测
       ob.observeArray(inserted);
     }
+    ob.dep.notify();
     return result
   }
 })
