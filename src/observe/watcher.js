@@ -1,4 +1,4 @@
-import Dep from "./dep";
+import Dep, { popTarget, pushTarget } from "./dep";
 
 let id = 0;
 
@@ -13,13 +13,31 @@ class Watcher {
     this.getter = fn; // getter意味着调用这个函数可以发生取值操作
     this.deps = []; // 后续实现计算属性和一些清理工作需要用到
     this.depsId = new Set();
-    this.get();
+    this.lazy = options.lazy;
+    this.dirty = this.lazy;
+    this.vm = vm;
+    this.lazy ? undefined : this.get();
+  }
+
+  evaluate() {
+    this.value = this.get(); // 获取到用户函数的返回值，并且还要标识为脏
+    this.dirty = false;
+  }
+
+  depend() {
+    let i = this.deps.length;
+    while(i--) {
+      this.deps[i].depend(); // 让计算属性watcher也收集渲染watcher
+    }
   }
 
   get() {
-    Dep.target = this; // 静态属性就是只有一份
-    this.getter(); // 会去vm上取值
-    Dep.target = null; // 渲染完就清空
+    // Dep.target = this; // 静态属性就是只有一份
+    pushTarget(this);
+    let value = this.getter.call(this.vm); // 会去vm上取值
+    // Dep.target = null; // 渲染完就清空
+    popTarget();
+    return value;
   }
 
   addDep(dep) {
@@ -33,8 +51,13 @@ class Watcher {
   }
 
   update() {
-    queueWatcher(this); // 吧当前的watcher暂存起来
-    // this.get();
+    if(this.lazy) {
+      // 如果是计算属性 依赖的值变化了 就标识计算属性是脏值了
+      this.dirty = true;
+    } else {
+      queueWatcher(this); // 吧当前的watcher暂存起来
+      // this.get();
+    }
   }
 
   run() {
