@@ -1,52 +1,6 @@
 import Watcher from "./observe/watcher";
 import { createElementVNode, createTextVNode } from "./vdom";
-
-function createElm(vnode) {
-  let { tag, data, children, text } = vnode;
-  if (typeof tag === "string") {
-    vnode.el = document.createElement(tag); // 这里将真实节点和虚拟节点对应起来，后续如果修改属性了，可以直接找到虚拟节点上挂载的真实节点修改
-
-    patchProps(vnode.el, data);
-
-    children.forEach((child) => {
-      vnode.el.appendChild(createElm(child));
-    });
-  } else {
-    vnode.el = document.createTextNode(text);
-  }
-
-  return vnode.el;
-}
-
-function patchProps(el, props) {
-  for (let key in props) {
-    if (key === "style") {
-      for (let styleName in props.style) {
-        el.style[styleName] = props.style[styleName];
-      }
-    } else {
-      el.setAttribute(key, props[key]);
-    }
-  }
-}
-
-function patch(oldVNode, vnode) {
-  // 写的是初渲染流程
-  const isRealElement = oldVNode.nodeType;
-
-  if (isRealElement) {
-    const elm = oldVNode; // 获取真实元素
-    const parentElm = elm.parentNode; // 拿到父元素
-
-    let newElm = createElm(vnode);
-    parentElm.insertBefore(newElm, elm.nextSibling);
-    parentElm.removeChild(elm);
-
-    return newElm;
-  } else {
-    // diff 算法
-  }
-}
+import { patch } from "./vdom/patch";
 
 export function initLifecycle(Vue) {
   // 变成真实DOM

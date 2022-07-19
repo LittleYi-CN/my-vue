@@ -1,6 +1,6 @@
 import Dep from "./observe/dep";
 import { observe } from "./observe/index";
-import Watcher from "./observe/watcher";
+import Watcher, { nextTick } from "./observe/watcher";
 
 export function initState(vm) {
   const ops = vm.$options; //获取所有的选项
@@ -10,7 +10,7 @@ export function initState(vm) {
   if (ops.computed) {
     initComputed(vm);
   }
-  if(ops.watch) {
+  if (ops.watch) {
     initWatch(vm);
   }
 }
@@ -43,7 +43,7 @@ function initData(vm) {
 
 function initComputed(vm) {
   const computed = vm.$options.computed;
-  const watchers = vm._computedWatchers = [];
+  const watchers = (vm._computedWatchers = []);
   for (let key in computed) {
     let userDef = computed[key];
     let fn = typeof userDef === "function" ? userDef : userDef.get;
@@ -67,27 +67,27 @@ function defineComputed(target, key, userDef) {
 // 计算属性根本不会收集依赖 只会让自己的依赖属性去收集依赖
 function createComputedGetter(key) {
   // 需要检测是否要执行这个getter
-  return function() {
+  return function () {
     const watcher = this._computedWatchers[key]; // 获取到对应属性的watcher
-    if(watcher.dirty) {
+    if (watcher.dirty) {
       watcher.evaluate(); // 求值后 dirty变为false， 下次就不求值了
     }
-    if(Dep.target) {
+    if (Dep.target) {
       // 计算属性出栈后 还要渲染watcher 应该让计算属性watcher里面的属性 也去收集上层watcher
       watcher.depend();
     }
     return watcher.value; // 最后返回的是watcher上的值
-  }
+  };
 }
 
 function initWatch(vm) {
   let watch = vm.$options.watch;
 
-  for(let key in watch) {
+  for (let key in watch) {
     // 字符串 数组 函数
     const handler = watch[key];
-    if(Array.isArray(handler)) {
-      for(let i = 0; i < handler.length; i++) {
+    if (Array.isArray(handler)) {
+      for (let i = 0; i < handler.length; i++) {
         createWatcher(vm, key, handler[i]);
       }
     } else {
@@ -98,8 +98,17 @@ function initWatch(vm) {
 
 function createWatcher(vm, key, handler) {
   // 字符串 函数
-  if(typeof handler === 'string') {
+  if (typeof handler === "string") {
     handler = vm[handler];
   }
-  return vm.$watch(key, handler)
+  return vm.$watch(key, handler);
+}
+
+export function initStateMixin(Vue) {
+  Vue.prototype.$nextTick = nextTick;
+
+  // 最终调用的都是这个方法
+  Vue.prototype.$watch = function (exprOrFn, cb, options = {}) {
+    new Watcher(this, exprOrFn, { user: true }, cb);
+  };
 }
