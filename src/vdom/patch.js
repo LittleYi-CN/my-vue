@@ -17,7 +17,7 @@ export function createElm(vnode) {
   return vnode.el;
 }
 
-export function patchProps(el, oldProps, props) {
+export function patchProps(el, oldProps = {}, props = {}) {
   // 老的属性中有 新的没有 要删除老的
   let oldStyles = oldProps.style || {};
   let newStyles = props.style || {};
@@ -133,12 +133,89 @@ function updateChildren(el, oldChildren, newChildren) {
   let oldEndVNode = oldChildren[oldEndIndex];
   let newEndVNode = newChildren[newEndIndex];
 
+  function makeIndexByKey(children) {
+    let map = {};
+    children.forEach((child, index) => {
+      map[child.key] = index;
+    });
+    return map;
+  }
+
+  let map = makeIndexByKey(oldChildren);
+
   while (oldStartIndex <= oldEndIndex && newStartIndex <= newEndIndex) {
     // 有任何一个不满足就停止
     // 双方有一方头指针 大于尾部指针则停止循环
+    // 从头指针往后比
+    if (!oldStartVNode) {
+      oldStartVNode = oldChildren[++oldStartIndex];
+    } else if (!oldEndVNode) {
+      oldEndVNode = oldChildren[--oldEndIndex];
+    } else if (isSameVNode(oldStartVNode, newStartVNode)) {
+      // 如果是相同节点，则递归比较子节点
+      patchVNode(oldStartVNode, newStartVNode);
+      oldStartVNode = oldChildren[++oldStartIndex];
+      newStartVNode = newChildren[++newStartIndex];
+      // 比较开头节点
+    } else if (isSameVNode(oldEndVNode, newEndVNode)) {
+      // 从尾指针往前比
+      patchVNode(oldEndVNode, newEndVNode);
+      oldEndVNode = oldChildren[--oldEndIndex];
+      newEndVNode = newChildren[--newEndIndex];
+    } else if (isSameVNode(oldEndVNode, newStartVNode)) {
+      // 交叉比对 老尾和新头比较
+      patchVNode(oldEndVNode, newStartVNode);
+      // insertBefore 具有移动性 会将原来的元素移动走
+      el.insertBefore(oldEndVNode.el, oldStartVNode.el); // 将老的尾巴移动到前面去
+      oldEndVNode = oldChildren[--oldEndIndex];
+      newStartVNode = newChildren[++newStartIndex];
+    } else if (isSameVNode(oldStartVNode, newEndVNode)) {
+      // 交叉比对 老头和新尾比较
+      patchVNode(oldStartVNode, newEndVNode);
+      // insertBefore 具有移动性 会将原来的元素移动走
+      el.insertBefore(oldStartVNode.el, oldEndVNode.el.nextSibling); // 将老的尾巴移动到前面去
+      oldStartVNode = oldChildren[++oldStartVNode];
+      newEndVNode = newChildren[--newEndVNode];
+    } else {
+      // 乱序比对
+      // 根据老的列表做一个映射关系 用新的去找，找到则移动，找不到则添加， 最后多余的就删除
+
+      let moveIndex = map[newStartVNode.key]; // 如果拿到则说明是我要移动的索引
+      if (moveIndex !== undefined) {
+        let moveVNode = oldChildren[moveIndex]; // 找到对应的虚拟节点 复用
+
+        el.insertBefore(moveVNode.el, oldStartVNode.el);
+
+        oldChildren[moveIndex] = undefined; // 表示这个节点已经移动走了
+        patchVNode(moveVNode, newStartVNode);
+      } else {
+        el.insertBefore(createElm(newStartVNode), oldStartVNode.el);
+      }
+
+      newStartVNode = newChildren[++newStartIndex];
+    }
   }
-  console.log(oldStartVNode);
-  console.log(newStartVNode);
-  console.log(oldEndVNode);
-  console.log(newEndVNode);
+
+  // 新的多的就插入进去
+  if (newStartIndex <= newEndIndex) {
+    for (let i = newStartIndex; i <= newEndIndex; i++) {
+      let childEl = createElm(newChildren[i]);
+      // 这里可能是向后追加，也可能是向前追加
+      // el.appendChild(childEl);
+      let anchor = newChildren[newEndIndex + 1]
+        ? newChildren[newEndIndex + 1].el
+        : null; // 获取下一个元素
+      el.insertBefore(childEl, anchor); // 如果insertBefore第二个参数是null，则会插入到最后
+    }
+  }
+
+  // 老的多的就删掉
+  if (oldStartIndex <= oldEndIndex) {
+    for (let i = oldStartIndex; i <= oldEndIndex; i++) {
+      if (oldChildren[i]) {
+        let childEl = oldChildren[i].el;
+        el.removeChild(childEl);
+      }
+    }
+  }
 }
