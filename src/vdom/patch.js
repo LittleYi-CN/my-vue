@@ -83,7 +83,7 @@ function patchVNode(oldVNode, vnode) {
   let el = (vnode.el = oldVNode.el);
   if (!oldVNode.tag) {
     // 是文本
-    if (!oldVNode.text === vnode.text) {
+    if (!(oldVNode.text === vnode.text)) {
       el.textContent = vnode.text;
     }
   }

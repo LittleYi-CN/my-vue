@@ -10,7 +10,16 @@ export function initLifecycle(Vue) {
     const el = vm.$el;
 
     // patch既有初始化的功能，又有更新的功能
-    vm.$el = patch(el, vnode);
+    // vm.$el = patch(el, vnode);
+
+    const prevVNode = vm._vnode;
+    vm._vnode = vnode; // 把组件第一次产生的虚拟节点保存到_vnode上
+    if(prevVNode) {
+      vm.$el = patch(prevVNode, vnode);
+    }else {
+      vm.$el = patch(el, vnode);
+    }
+
   };
   // _c('div', {}, ...children)
   Vue.prototype._c = function () {
