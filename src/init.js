@@ -28,9 +28,7 @@ export function initMixin(Vue) { // 给Vue增加init方法的
       if(!ops.template && el) { // 没有写模版，但是写了el
         template = el.outerHTML;
       } else {
-        if(el) {
-          template = ops.template;
-        }
+        template = ops.template;
       }
       // 写了template 就用写了的template
       if(template) {
